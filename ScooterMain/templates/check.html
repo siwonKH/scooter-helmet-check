@@ -1,0 +1,143 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no,
+  maximum-scale=1.0, minimum-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <title>헬멧 확인</title>
+</head>
+<body>
+    <div class="flex justify-center mt-2">
+        <div class="inline-block">
+{#            <canvas id="output" width="160" height="140" style="border: 1px solid #ddd;"></canvas>#}
+{#            <video id="video" width="400" height="300" style="border: 1px solid #ddd;"></video>#}
+{#            <video id="myVideo" width="400" height="300" style="border: 1px solid #ddd;"></video>#}
+{#            <canvas id="myCanvas" width="160" height="140" style="border: 1px solid #ddd;" hidden></canvas>#}
+            <video id="video" width="640" height="480" autoplay></video>
+            <canvas id="canvas" width="640" height="480"></canvas>
+            <div id="prediction"></div>
+            <button id="checkBtn" class="mt-1 bg-[#FCDB00] rounded text-black w-full py-2" onclick="sendImage()">헬멧 확인하기</button>
+        </div>
+    </div>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script>
+        function sendImage() {
+            const checkBtn = document.getElementById("checkBtn")
+            console.log('확인중..')
+            checkBtn.innerText = "헬멧 확인중.."
+            checkBtn.disabled = true
+
+
+            takeSnapshot()
+
+            const $canvas = document.getElementById('myCanvas');
+            console.log($canvas)
+            const imgDataUrl = $canvas.toDataURL('image/png');
+
+            const blobBin = atob(imgDataUrl.split(',')[1]);	// base64 데이터 디코딩
+            const array = [];
+            for (let i = 0; i < blobBin.length; i++) {
+                array.push(blobBin.charCodeAt(i));
+            }
+            const file = new Blob([new Uint8Array(array)], {type: 'image/png'});	// Blob 생성
+            const formdata = new FormData();	// formData 생성
+            formdata.append("file", file);	// file data 추가
+
+            $.ajax({
+                type : 'post',
+                url : '/check',
+                data : formdata,
+                processData : false,	// data 파라미터 강제 string 변환 방지!!
+                contentType : false,	// application/x-www-form-urlencoded; 방지!!
+                success : function (data) {
+                    if (data.available === "1") {
+                        alert('탑승 가능합니다')
+                        location.href = "/ride"
+                    }
+                    if (data.available === "0") {
+                        alert('헬멧을 착용해 주세요')
+                        location.href = "/check"
+                    }
+                    checkBtn.innerText = "헬멧 확인하기"
+                    checkBtn.disabled = false
+                },
+            })
+        }
+    </script>
+
+    <script src="{% static 'webcam.js' %}"></script>
+    <script>
+        getVideo()
+    </script>
+
+    <div id="main">
+    <div class="container">
+      <div class="canvas-wrapper">
+        <canvas id="output"></canvas>
+        <video id="video" playsinline style="
+          -webkit-transform: scaleX(-1);
+          transform: scaleX(-1);
+          visibility: hidden;
+          width: auto;
+          height: auto;
+          ">
+        </video>
+      </div>
+    </div>
+  </div>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.9.0/dist/tf.min.js"></script>
+    <script>
+        // Load your pre-trained model
+        const model = await tf.loadGraphModel('{% static 's200-best_web_model/model.json' %}');
+
+        // Capture video from the webcam
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const context = canvas.getContext('2d');
+        const constraints = {video: true};
+        navigator.mediaDevices.getUserMedia(constraints)
+            .then((stream) => {
+                video.srcObject = stream;
+            });
+
+        // Predict on every video frame
+        async function predict() {
+            // Draw the current video frame onto the canvas
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // Get the pixel data from the canvas
+            const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
+
+            // Preprocess the pixel data as required by your model
+            const tensor = tf.browser.fromPixels(pixels)
+                .resizeNearestNeighbor([224, 224])
+                .expandDims()
+                .toFloat()
+                .div(255.0);
+
+            // Use your loaded model to predict the class or value of the video frame
+            const prediction = await model.predict(tensor).data();
+
+            // Display the prediction to the user
+            document.getElementById('prediction').innerText = `Prediction: ${prediction}`;
+
+            // Draw bounding box around the detected object
+            const x = 100; // x-coordinate of top-left corner of bounding box
+            const y = 100; // y-coordinate of top-left corner of bounding box
+            const width = 200; // width of bounding box
+            const height = 200; // height of bounding box
+            context.beginPath();
+            context.lineWidth = "2";
+            context.strokeStyle = "red";
+            context.rect(x, y, width, height);
+            context.stroke();
+        }
+
+        setInterval(predict, 100); // predict every 100ms
+
+    </script>
+</body>
+</html>

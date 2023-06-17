@@ -1,0 +1,135 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no,
+  maximum-scale=1.0, minimum-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <title>탑승중</title>
+</head>
+<body>
+    <div class="flex justify-center mt-2">
+        <div class="inline-block">
+            <video id="myVideo" width="400" height="300" style="border: 1px solid #ddd;"></video>
+            <canvas id="responseImg" width="160" height="140" style="border: 1px solid #ddd;"></canvas>
+            <canvas id="myCanvas" width="160" height="140" style="border: 1px solid #ddd;" hidden></canvas>
+            <div class="flex justify-between">
+                <button id="startBtn" class="mt-1 mr-1 bg-[#FCDB00] rounded py-2 w-full">탑승 시작</button>
+                <button id="exitBtn" class="mt-1 ml-1 border rounded py-2 w-full">탑승 종료</button>
+            </div>
+            <div>
+                <span id="time">00:00</span>
+                요금:<span id="pay"></span>원
+                <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+                <script src="{% static 'webcam.js' %}"></script>
+                <script>
+                    function takeAuto() {
+                        const resImg = document.getElementById("responseImg")
+
+                        takeSnapshot() // get snapshot right away then wait and repeat
+                        clearInterval(myStoredInterval)
+                        myStoredInterval = setInterval(function(){
+                           takeSnapshot()
+                            const $canvas = document.getElementById('myCanvas');
+                            console.log($canvas)
+                            const imgDataUrl = $canvas.toDataURL('image/png');
+
+                            const blobBin = atob(imgDataUrl.split(',')[1]);	// base64 데이터 디코딩
+                            const array = [];
+                            for (let i = 0; i < blobBin.length; i++) {
+                                array.push(blobBin.charCodeAt(i));
+                            }
+                            const file = new Blob([new Uint8Array(array)], {type: 'image/png'});	// Blob 생성
+                            const formdata = new FormData();	// formData 생성
+                            formdata.append("file", file);	// file data 추가
+                            $.ajax({
+                                type : 'post',
+                                url : '/ride',
+                                data : formdata,
+                                processData : false,	// data 파라미터 강제 string 변환 방지!!
+                                contentType : false,	// application/x-www-form-urlencoded; 방지!!
+                                success : function (data) {
+                                    console.log(data)
+                                    resImg.renderImage(data)
+                                },
+                            })
+                       }, 1000);
+                    }
+                    {#function sendSnap() {#}
+                    {#        takeSnapshot()#}
+                    {#        const $canvas = document.getElementById('myCanvas');#}
+                    {#        console.log($canvas)#}
+                    {#        const imgDataUrl = $canvas.toDataURL('image/png');#}
+                    {##}
+                    {#        const blobBin = atob(imgDataUrl.split(',')[1]);	// base64 데이터 디코딩#}
+                    {#        const array = [];#}
+                    {#        for (let i = 0; i < blobBin.length; i++) {#}
+                    {#            array.push(blobBin.charCodeAt(i));#}
+                    {#        }#}
+                    {#        const file = new Blob([new Uint8Array(array)], {type: 'image/png'});	// Blob 생성#}
+                    {#        const formdata = new FormData();	// formData 생성#}
+                    {#        formdata.append("file", file);	// file data 추가#}
+                    {#        $.ajax({#}
+                    {#            type : 'post',#}
+                    {#            url : '/ride',#}
+                    {#            data : formdata,#}
+                    {#            processData : false,	// data 파라미터 강제 string 변환 방지!!#}
+                    {#            contentType : false,	// application/x-www-form-urlencoded; 방지!!#}
+                    {#            success : function (data) {#}
+                    {#                console.log(data)#}
+                    {#                if (data.available === "0") {#}
+                    {#                    exitRiding2()#}
+                    {#                }#}
+                    {#            },#}
+                    {#        })#}
+                    {#        console.log('전송 완료')#}
+                    {#   }#}
+                    {##}
+                    {#function takeAuto() {#}
+                    {#    takeSnapshot()#}
+                    {#    while (true) {#}
+                    {#        sendSnap()#}
+                    {#    }#}
+                    {#}#}
+                </script>
+                <script defer>
+                    let min = 0
+                    let sec = 0
+                    const timer = document.getElementById("time")
+                    const pay = document.getElementById("pay")
+
+                    const increaseSecond = () => {
+                        if (sec < 60) {
+                            sec += 1
+                        } else {
+                            sec = 0
+                            min += 1
+                        }
+                    }
+                    const showTime = () => {
+                        timer.innerText = String(min).padStart(2, '0') + ":" + String(sec).padStart(2, '0')
+                        pay.innerText = String(500 + 150 * min)
+                        increaseSecond()
+                        setTimeout(showTime, 100)
+                    }
+                    const startRiding = () => {
+                        showTime()
+                        getVideo()
+                        takeAuto()
+                    }
+                    const exitRiding = () => {
+                        alert('탑승 종료')
+                        location.href = "/"
+                    }
+
+                    const startBtn = document.getElementById("startBtn")
+                    const exitBtn = document.getElementById("exitBtn")
+                    startBtn.onclick = startRiding
+                    exitBtn.onclick = exitRiding
+                </script>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

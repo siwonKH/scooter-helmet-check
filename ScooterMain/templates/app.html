@@ -1,0 +1,53 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no,
+  maximum-scale=1.0, minimum-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <title>킥보드 앱</title>
+</head>
+<body style="background-image: url({% static 'map3.png' %})">
+    <div class="bg-white/75">
+        <img src="{% static 'scooter.png' %}" class="w-10 bg-[#FCDB00] inline-block mt-4 ml-4 mb-4 rounded-xl p-1">
+        <span class="text-xl underline font-bold mt-4">Scooters</span>
+{#        <h2 class="text-xl underline font-bold bg-[#FCDB00] inline-block m-4 rounded-xl p-1">Scooters</h2>#}
+    </div>
+
+    <style>
+        .scooter-icon {
+            width: 40px;
+            position: absolute;
+            cursor: pointer;
+        }
+    </style>
+    <img class="scooter-icon" src="{% static 'loc3.png' %}" onclick="toggleInfo()" style="left: 760px; top: 300px">
+    <img class="scooter-icon" src="{% static 'loc3.png' %}" onclick="toggleInfo()" style="left: 500px; top: 500px">
+    <img class="scooter-icon" src="{% static 'loc3.png' %}" onclick="toggleInfo()" style="left: 460px; top: 560px">
+    <img class="scooter-icon" src="{% static 'loc3.png' %}" onclick="toggleInfo()" style="left: 400px; top: 390px">
+    
+
+{#    <a href="/check">킥보드 이용하기</a>#}
+    <div id="scooter-info" class="bottom-0 absolute w-max" style="left: 40%">
+        <div class="relative bg-white w-96 mx-auto text-center mb-2 p-2 rounded">
+            <div>
+                <h2 class="text-xl m-1">배터리 80%</h2>
+                <p>잠금해제 500원, 분당 150원</p>
+            </div>
+            <div class="my-3">
+                <a href="/check" class="border bg-[#FCDB00] rounded p-2" style="cursor: pointer">이용하기</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const toggleInfo = () => {
+            const infoBlock = document.getElementById("scooter-info")
+            infoBlock.hidden = !infoBlock.hidden
+        }
+    </script>
+
+
+</body>
+</html>
